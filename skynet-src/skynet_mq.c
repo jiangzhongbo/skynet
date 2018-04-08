@@ -38,6 +38,7 @@ struct global_queue {
 	struct spinlock lock;
 };
 
+// 全局二级队列，skynet的核心
 static struct global_queue *Q = NULL;
 
 void 
@@ -186,6 +187,9 @@ expand_queue(struct message_queue *q) {
 	q->queue = new_queue;
 }
 
+// 早期skynet在这里基于cas无锁实现
+// https://blog.codingnow.com/2014/12/skynet_spinlock.html
+// 在这里用自旋锁代码更简单，之前的无锁实现，还需要考虑cpu乱序执行问题，代码很难写正确
 void 
 skynet_mq_push(struct message_queue *q, struct skynet_message *message) {
 	assert(message);

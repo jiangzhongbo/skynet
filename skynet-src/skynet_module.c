@@ -19,6 +19,7 @@ struct modules {
 	struct skynet_module m[MAX_MODULE_TYPE];
 };
 
+// 提供module查询服务，注意这里使用了读写锁
 static struct modules * M = NULL;
 
 static void *

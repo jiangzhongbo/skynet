@@ -1,3 +1,5 @@
+  // skynet最核心的部分
+
 #include "skynet.h"
 
 #include "skynet_server.h"
@@ -69,6 +71,7 @@ struct skynet_node {
 	bool profile;	// default is off
 };
 
+// 管理所有的service
 static struct skynet_node G_NODE;
 
 int 
@@ -86,6 +89,7 @@ context_dec() {
 	ATOM_DEC(&G_NODE.total);
 }
 
+// debug内存时所用
 uint32_t 
 skynet_current_handle(void) {
 	if (G_NODE.init) {

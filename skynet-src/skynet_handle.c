@@ -29,6 +29,7 @@ struct handle_storage {
 	struct handle_name *name;
 };
 
+// 提供service命名服务
 static struct handle_storage *H = NULL;
 
 uint32_t
