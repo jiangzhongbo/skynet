@@ -257,23 +257,23 @@ skynet_start(struct skynet_config * config) {
 			exit(1);
 		}
 	}
-	skynet_harbor_init(config->harbor);
-	skynet_handle_init(config->harbor);
-	skynet_mq_init();
-	skynet_module_init(config->module_path);
-	skynet_timer_init();
-	skynet_socket_init();
+	skynet_harbor_init(config->harbor); 									//harbor服务，用于集群，harbor本质是一个skynet服务
+	skynet_handle_init(config->harbor); 									//句柄管理服务
+	skynet_mq_init();														//全局队列
+	skynet_module_init(config->module_path);								//模块管理服务
+	skynet_timer_init();													//定时器服务，独享一个线程
+	skynet_socket_init();													//socket服务器，独享一个线程
 	skynet_profile_enable(config->profile);
 
-	struct skynet_context *ctx = skynet_context_new(config->logservice, config->logger);
+	struct skynet_context *ctx = skynet_context_new(config->logservice, config->logger); //启动第一个service，是一个cservice，用于log
 	if (ctx == NULL) {
 		fprintf(stderr, "Can't launch %s service\n", config->logservice);
 		exit(1);
 	}
 
-	bootstrap(ctx, config->bootstrap);
+	bootstrap(ctx, config->bootstrap); //启动第二个service，用于引导第一个lua虚拟机
 
-	start(config->thread);
+	start(config->thread);//启动各个线程，主线程堵塞
 
 	// harbor_exit may call socket send, so it should exit before socket_free
 	skynet_harbor_exit();

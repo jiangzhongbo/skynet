@@ -56,6 +56,7 @@ forward_message(int type, bool padding, struct socket_message * result) {
 		sm->buffer = result->data;
 	}
 
+	// 这里把msg分配到栈上，如果msg投递成功，会copy一份到消息队列
 	struct skynet_message message;
 	message.source = 0;
 	message.session = 0;
