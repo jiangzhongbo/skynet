@@ -45,15 +45,15 @@
 struct skynet_context {
 	void * instance;
 	struct skynet_module * mod;
-	void * cb_ud;
-	skynet_cb cb;
-	struct message_queue *queue;
+	void * cb_ud; // 一般是service的核心结构体实例指针
+	skynet_cb cb; // msg回调函数
+	struct message_queue *queue;//相对应的队列指针
 	FILE * logfile;
 	uint64_t cpu_cost;	// in microsec
 	uint64_t cpu_start;	// in microsec
 	char result[32];
-	uint32_t handle;
-	int session_id;
+	uint32_t handle; //独一无二的句柄
+	int session_id; //当前会话id
 	int ref;
 	int message_count;
 	bool init;
@@ -187,6 +187,7 @@ skynet_context_new(const char * name, const char *param) {
 	}
 }
 
+//只在回调中执行
 int
 skynet_context_newsession(struct skynet_context *ctx) {
 	// session always be a positive number
@@ -301,6 +302,7 @@ skynet_context_dispatchall(struct skynet_context * ctx) {
 	}
 }
 
+//多线程执行
 struct message_queue * 
 skynet_context_message_dispatch(struct skynet_monitor *sm, struct message_queue *q, int weight) {
 	if (q == NULL) {
@@ -309,7 +311,7 @@ skynet_context_message_dispatch(struct skynet_monitor *sm, struct message_queue 
 			return NULL;
 	}
 
-	uint32_t handle = skynet_mq_handle(q);
+	uint32_t handle = skynet_mq_handle(q); //q->handle 不是少一次调用？
 
 	struct skynet_context * ctx = skynet_handle_grab(handle);
 	if (ctx == NULL) {
@@ -396,7 +398,7 @@ handle_exit(struct skynet_context * context, uint32_t handle) {
 }
 
 // skynet command
-
+// 所有的cmd函数都不会并发执行
 struct command_func {
 	const char *name;
 	const char * (*func)(struct skynet_context * context, const char * param);
@@ -411,7 +413,7 @@ cmd_timeout(struct skynet_context * context, const char * param) {
 	sprintf(context->result, "%d", session);
 	return context->result;
 }
-
+//注册service名字
 static const char *
 cmd_reg(struct skynet_context * context, const char * param) {
 	if (param == NULL || param[0] == '\0') {

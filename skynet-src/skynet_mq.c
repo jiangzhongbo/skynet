@@ -29,7 +29,7 @@ struct message_queue {
 	int in_global;
 	int overload;
 	int overload_threshold;
-	struct skynet_message *queue; //消息队列，是一个数组
+	struct skynet_message *queue; //消息队列，是一块连续内存
 	struct message_queue *next;
 };
 

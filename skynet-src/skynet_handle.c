@@ -140,7 +140,7 @@ skynet_handle_grab(uint32_t handle) {
 
 	uint32_t hash = handle & (s->slot_size-1);
 	struct skynet_context * ctx = s->slot[hash];
-	if (ctx && skynet_context_handle(ctx) == handle) {
+	if (ctx && skynet_context_handle(ctx) == handle) { //ctx可能为空，因为service会被杀掉，但是handle还在
 		result = ctx;
 		skynet_context_grab(result);
 	}
