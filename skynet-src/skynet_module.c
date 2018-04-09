@@ -63,6 +63,7 @@ _try_open(struct modules *m, const char * name) {
 	return dl;
 }
 
+// 这个函数会被并发执行
 static struct skynet_module * 
 _query(const char * name) {
 	int i;

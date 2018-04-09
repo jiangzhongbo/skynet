@@ -16,6 +16,7 @@ struct handle_name {
 	uint32_t handle;
 };
 
+// 提供句柄对ctx的映射，为了查询方便这里用数组而不是链表，用倍增法
 struct handle_storage {
 	struct rwlock lock;
 
@@ -29,7 +30,7 @@ struct handle_storage {
 	struct handle_name *name;
 };
 
-// 提供service命名服务
+// 提供service句柄服务
 static struct handle_storage *H = NULL;
 
 uint32_t

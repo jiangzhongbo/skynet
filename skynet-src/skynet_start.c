@@ -205,6 +205,7 @@ start(int thread) {
 	create_thread(&pid[1], thread_timer, m);
 	create_thread(&pid[2], thread_socket, m);
 
+	//消费msg的权重
 	static int weight[] = { 
 		-1, -1, -1, -1, 0, 0, 0, 0,
 		1, 1, 1, 1, 1, 1, 1, 1, 
@@ -271,7 +272,7 @@ skynet_start(struct skynet_config * config) {
 		exit(1);
 	}
 
-	bootstrap(ctx, config->bootstrap); //启动第二个service，用于引导第一个lua虚拟机
+	bootstrap(ctx, config->bootstrap); //启动第二个service，在这里用于引导第一个lua虚拟机
 
 	start(config->thread);//启动各个线程，主线程堵塞
 

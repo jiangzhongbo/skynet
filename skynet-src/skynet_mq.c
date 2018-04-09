@@ -18,6 +18,7 @@
 #define MQ_IN_GLOBAL 1
 #define MQ_OVERLOAD 1024
 
+// 这是一个循环队列，持有ctx的句柄，
 struct message_queue {
 	struct spinlock lock;
 	uint32_t handle;
@@ -28,7 +29,7 @@ struct message_queue {
 	int in_global;
 	int overload;
 	int overload_threshold;
-	struct skynet_message *queue;
+	struct skynet_message *queue; //消息队列，是一个数组
 	struct message_queue *next;
 };
 

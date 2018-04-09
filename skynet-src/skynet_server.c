@@ -41,7 +41,7 @@
 #define CHECKCALLING_DECL
 
 #endif
-
+//每个ctx持有相对应的消息队列的地址，加载模块的地址，和从handle service那里拿来的唯一id句柄
 struct skynet_context {
 	void * instance;
 	struct skynet_module * mod;
@@ -126,6 +126,8 @@ drop_message(struct skynet_message *msg, void *ud) {
 	skynet_send(NULL, source, msg->source, PTYPE_ERROR, 0, NULL, 0);
 }
 
+// skynet_context_new 在创建失败的时候返回NULL，所以需要对返回值进行检查
+
 struct skynet_context * 
 skynet_context_new(const char * name, const char *param) {
 	struct skynet_module * mod = skynet_module_query(name);
@@ -159,7 +161,7 @@ skynet_context_new(const char * name, const char *param) {
 	ctx->handle = skynet_handle_register(ctx);
 	struct message_queue * queue = ctx->queue = skynet_mq_create(ctx->handle);
 	// init function maybe use ctx->handle, so it must init at last
-	context_inc();
+	context_inc(); //G_node统计加一
 
 	CHECKCALLING_BEGIN(ctx)
 	int r = skynet_module_instance_init(mod, inst, ctx, param);
@@ -201,6 +203,7 @@ skynet_context_grab(struct skynet_context *ctx) {
 	ATOM_INC(&ctx->ref);
 }
 
+// 目前来看只用在harbor
 void
 skynet_context_reserve(struct skynet_context *ctx) {
 	skynet_context_grab(ctx);
@@ -242,6 +245,7 @@ skynet_context_push(uint32_t handle, struct skynet_message *message) {
 	return 0;
 }
 
+//设置死循环标志
 void 
 skynet_context_endless(uint32_t handle) {
 	struct skynet_context * ctx = skynet_handle_grab(handle);

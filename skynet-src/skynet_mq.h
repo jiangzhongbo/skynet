@@ -5,8 +5,8 @@
 #include <stdint.h>
 
 struct skynet_message {
-	uint32_t source;
-	int session;
+	uint32_t source; //消息源service的handle
+	int session;//会话id
 	void * data;
 	size_t sz;
 };
