@@ -143,7 +143,7 @@ skynet_context_new(const char * name, const char *param) {
 
 	ctx->mod = mod;
 	ctx->instance = inst;
-	ctx->ref = 2;
+	ctx->ref = 2; //这里之所以等于2，当init失败的时候 skynet_context_release减一次，skynet_handle_retire再减一次
 	ctx->cb = NULL;
 	ctx->cb_ud = NULL;
 	ctx->session_id = 0;
@@ -168,6 +168,7 @@ skynet_context_new(const char * name, const char *param) {
 	CHECKCALLING_END(ctx)
 	if (r == 0) {
 		struct skynet_context * ret = skynet_context_release(ctx);
+		//这时ref等于1，这个引用在H里面
 		if (ret) {
 			ctx->init = true;
 		}
@@ -199,6 +200,7 @@ skynet_context_newsession(struct skynet_context *ctx) {
 	return session;
 }
 
+//加一次引用
 void 
 skynet_context_grab(struct skynet_context *ctx) {
 	ATOM_INC(&ctx->ref);
@@ -398,7 +400,7 @@ handle_exit(struct skynet_context * context, uint32_t handle) {
 }
 
 // skynet command
-// 所有的cmd函数都不会并发执行
+// 所有的cmd函数都不会并发执行，并且只会在cb中执行
 struct command_func {
 	const char *name;
 	const char * (*func)(struct skynet_context * context, const char * param);

@@ -131,6 +131,7 @@ skynet_handle_retireall() {
 	}
 }
 
+// 通过句柄得到ctx，ctx->ref加一
 struct skynet_context * 
 skynet_handle_grab(uint32_t handle) {
 	struct handle_storage *s = H;
