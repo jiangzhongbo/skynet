@@ -42,16 +42,17 @@ struct global_queue {
 // 全局二级队列，skynet的核心
 static struct global_queue *Q = NULL;
 
+
 void 
 skynet_globalmq_push(struct message_queue * queue) {
 	struct global_queue *q= Q;
 
 	SPIN_LOCK(q)
-	assert(queue->next == NULL);
-	if(q->tail) {
+	assert(queue->next == NULL); //push进Q的消息队列的next指针一定为NULL
+	if(q->tail) { // tail不为NULL意味着Q中有消息队列在
 		q->tail->next = queue;
 		q->tail = queue;
-	} else {
+	} else { // Q是空的
 		q->head = q->tail = queue;
 	}
 	SPIN_UNLOCK(q)
@@ -63,13 +64,13 @@ skynet_globalmq_pop() {
 
 	SPIN_LOCK(q)
 	struct message_queue *mq = q->head;
-	if(mq) {
+	if(mq) { // Q不为空
 		q->head = mq->next;
-		if(q->head == NULL) {
-			assert(mq == q->tail);
+		if(q->head == NULL) { // Q为空
+			assert(mq == q->tail); // 在Q中只有一个队列的情况下，head == tail
 			q->tail = NULL;
 		}
-		mq->next = NULL;
+		mq->next = NULL; // pop队列，next一定为空，不然会造成内存泄漏和消息丢失
 	}
 	SPIN_UNLOCK(q)
 
