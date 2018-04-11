@@ -418,7 +418,7 @@ cmd_timeout(struct skynet_context * context, const char * param) {
 	return context->result;
 }
 
-//注册service名字
+//给当前的service注册名字
 static const char *
 cmd_reg(struct skynet_context * context, const char * param) {
 	if (param == NULL || param[0] == '\0') {
@@ -444,7 +444,8 @@ cmd_query(struct skynet_context * context, const char * param) {
 	}
 	return NULL;
 }
-//貌似功能和reg重合了
+
+//貌似功能和reg重合了，设置给与的handle名字
 static const char *
 cmd_name(struct skynet_context * context, const char * param) {
 	int size = strlen(param);
@@ -466,7 +467,7 @@ cmd_name(struct skynet_context * context, const char * param) {
 	return NULL;
 }
 
-//service退出
+//当前service退出
 static const char *
 cmd_exit(struct skynet_context * context, const char * param) {
 	handle_exit(context, 0);
@@ -499,6 +500,7 @@ cmd_kill(struct skynet_context * context, const char * param) {
 	return NULL;
 }
 
+//运行新的service
 static const char *
 cmd_launch(struct skynet_context * context, const char * param) {
 	size_t sz = strlen(param);
