@@ -58,6 +58,7 @@ skynet_globalmq_push(struct message_queue * queue) {
 	SPIN_UNLOCK(q)
 }
 
+//这里看不懂，怎么做到堵塞立即返回NULL的
 struct message_queue * 
 skynet_globalmq_pop() {
 	struct global_queue *q = Q;
