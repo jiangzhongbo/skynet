@@ -500,7 +500,7 @@ cmd_kill(struct skynet_context * context, const char * param) {
 	return NULL;
 }
 
-//运行新的service
+//启动新的service
 static const char *
 cmd_launch(struct skynet_context * context, const char * param) {
 	size_t sz = strlen(param);
