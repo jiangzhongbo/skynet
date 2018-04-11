@@ -137,9 +137,9 @@ main(int argc, char *argv[]) {
 	struct lua_State *L = luaL_newstate();
 	luaL_openlibs(L);	// link lua lib
 
-	int err =  luaL_loadbufferx(L, load_config, strlen(load_config), "=[skynet config]", "t");
+	int err =  luaL_loadbufferx(L, load_config, strlen(load_config), "=[skynet config]", "t"); // 加载配置文件解析lua代码
 	assert(err == LUA_OK);
-	lua_pushstring(L, config_file);
+	lua_pushstring(L, config_file); //加载配置文件
 
 	err = lua_pcall(L, 1, 1, 0);
 	if (err) {
@@ -147,7 +147,7 @@ main(int argc, char *argv[]) {
 		lua_close(L);
 		return 1;
 	}
-	_init_env(L);
+	_init_env(L); //将config存入全局共享的lua虚拟机
 
 	config.thread =  optint("thread",8);
 	config.module_path = optstring("cpath","./cservice/?.so");
@@ -160,7 +160,7 @@ main(int argc, char *argv[]) {
 
 	lua_close(L);
 
-	skynet_start(&config);
+	skynet_start(&config);//启动skynet核心部分
 	skynet_globalexit();
 	luaS_exitshr();
 

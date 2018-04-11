@@ -4,7 +4,7 @@
 
 #include <lua.h>
 #include <lauxlib.h>
-
+//用一个lua虚拟机保持整个skynet的环境变量
 #include <stdlib.h>
 #include <assert.h>
 

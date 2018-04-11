@@ -5,6 +5,7 @@
 #include <string.h>
 #include <time.h>
 
+//打开log文件
 FILE * 
 skynet_log_open(struct skynet_context * ctx, uint32_t handle) {
 	const char * logpath = skynet_getenv("logpath");
@@ -27,6 +28,7 @@ skynet_log_open(struct skynet_context * ctx, uint32_t handle) {
 	return f;
 }
 
+//关闭log文件
 void
 skynet_log_close(struct skynet_context * ctx, FILE *f, uint32_t handle) {
 	skynet_error(ctx, "Close log file :%08x", handle);
@@ -34,6 +36,7 @@ skynet_log_close(struct skynet_context * ctx, FILE *f, uint32_t handle) {
 	fclose(f);
 }
 
+//log 内存块
 static void
 log_blob(FILE *f, void * buffer, size_t sz) {
 	size_t i;
@@ -43,6 +46,7 @@ log_blob(FILE *f, void * buffer, size_t sz) {
 	}
 }
 
+//log socket消息
 static void
 log_socket(FILE * f, struct skynet_socket_message * message, size_t sz) {
 	fprintf(f, "[socket] %d %d %d ", message->type, message->id, message->ud);
@@ -63,6 +67,7 @@ log_socket(FILE * f, struct skynet_socket_message * message, size_t sz) {
 	fflush(f);
 }
 
+//log msg
 void 
 skynet_log_output(FILE *f, uint32_t source, int type, int session, void * buffer, size_t sz) {
 	if (type == PTYPE_SOCKET) {

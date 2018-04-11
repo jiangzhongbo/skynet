@@ -1,3 +1,4 @@
+//log
 #include "skynet.h"
 #include "skynet_handle.h"
 #include "skynet_mq.h"

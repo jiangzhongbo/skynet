@@ -1,6 +1,7 @@
 #ifndef SKYNET_IMP_H
 #define SKYNET_IMP_H
 
+//skynet配置数据结构，解析config文件得到
 struct skynet_config {
 	int thread;
 	int harbor;

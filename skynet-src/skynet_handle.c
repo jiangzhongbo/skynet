@@ -33,6 +33,7 @@ struct handle_storage {
 // 提供service句柄服务
 static struct handle_storage *H = NULL;
 
+//注册serivice
 uint32_t
 skynet_handle_register(struct skynet_context *ctx) {
 	struct handle_storage *s = H;

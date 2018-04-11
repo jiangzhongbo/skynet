@@ -1,3 +1,5 @@
+//deamon进程
+
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>

@@ -820,7 +820,7 @@ skynet_globalinit(void) {
 	G_NODE.total = 0;
 	G_NODE.monitor_exit = 0;
 	G_NODE.init = 1;
-	if (pthread_key_create(&G_NODE.handle_key, NULL)) {
+	if (pthread_key_create(&G_NODE.handle_key, NULL)) { // 类似于java的threadlocal
 		fprintf(stderr, "pthread_key_create failed");
 		exit(1);
 	}

@@ -6,8 +6,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define PTYPE_TEXT 0
-#define PTYPE_RESPONSE 1
+//消息类型
+#define PTYPE_TEXT 0 //用文本方式序列化消息
+#define PTYPE_RESPONSE 1 //响应的消息
 #define PTYPE_MULTICAST 2
 #define PTYPE_CLIENT 3
 #define PTYPE_SYSTEM 4
@@ -21,8 +22,8 @@
 #define PTYPE_RESERVED_LUA 10
 #define PTYPE_RESERVED_SNAX 11
 
-#define PTYPE_TAG_DONTCOPY 0x10000
-#define PTYPE_TAG_ALLOCSESSION 0x20000
+#define PTYPE_TAG_DONTCOPY 0x10000 //消息不要拷贝，进程内消息投递
+#define PTYPE_TAG_ALLOCSESSION 0x20000 //分配会话id
 
 struct skynet_context;
 

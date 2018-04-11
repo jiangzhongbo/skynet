@@ -1,3 +1,4 @@
+//统一epoll和kqueue
 #ifndef socket_poll_h
 #define socket_poll_h
 
