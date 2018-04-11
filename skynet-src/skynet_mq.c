@@ -47,7 +47,7 @@ void
 skynet_globalmq_push(struct message_queue * queue) {
 	struct global_queue *q= Q;
 
-	SPIN_LOCK(q)
+	SPIN_LOCK(q) // 这里锁的是全局队列
 	assert(queue->next == NULL); //push进Q的消息队列的next指针一定为NULL
 	if(q->tail) { // tail不为NULL意味着Q中有消息队列在
 		q->tail->next = queue;
@@ -196,7 +196,7 @@ expand_queue(struct message_queue *q) {
 void 
 skynet_mq_push(struct message_queue *q, struct skynet_message *message) {
 	assert(message);
-	SPIN_LOCK(q)
+	SPIN_LOCK(q) // 这里锁的是消息队列
 
 	q->queue[q->tail] = *message;
 	if (++ q->tail >= q->cap) {

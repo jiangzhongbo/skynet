@@ -304,7 +304,7 @@ skynet_context_dispatchall(struct skynet_context * ctx) {
 	}
 }
 
-//多线程执行
+//多线程执行，驱动消息分发
 struct message_queue * 
 skynet_context_message_dispatch(struct skynet_monitor *sm, struct message_queue *q, int weight) {
 	if (q == NULL) {
@@ -373,6 +373,7 @@ copy_name(char name[GLOBALNAME_LENGTH], const char * addr) {
 	}
 }
 
+//返回handle
 uint32_t 
 skynet_queryname(struct skynet_context * context, const char * name) {
 	switch(name[0]) {
@@ -406,6 +407,7 @@ struct command_func {
 	const char * (*func)(struct skynet_context * context, const char * param);
 };
 
+//传入一个时间值，然后新建会话注册到定时器返回
 static const char *
 cmd_timeout(struct skynet_context * context, const char * param) {
 	char * session_ptr = NULL;
@@ -415,6 +417,7 @@ cmd_timeout(struct skynet_context * context, const char * param) {
 	sprintf(context->result, "%d", session);
 	return context->result;
 }
+
 //注册service名字
 static const char *
 cmd_reg(struct skynet_context * context, const char * param) {
@@ -429,6 +432,7 @@ cmd_reg(struct skynet_context * context, const char * param) {
 	}
 }
 
+//查名字返回handle
 static const char *
 cmd_query(struct skynet_context * context, const char * param) {
 	if (param[0] == '.') {
@@ -440,7 +444,7 @@ cmd_query(struct skynet_context * context, const char * param) {
 	}
 	return NULL;
 }
-
+//貌似功能和reg重合了
 static const char *
 cmd_name(struct skynet_context * context, const char * param) {
 	int size = strlen(param);
@@ -462,12 +466,15 @@ cmd_name(struct skynet_context * context, const char * param) {
 	return NULL;
 }
 
+//service退出
 static const char *
 cmd_exit(struct skynet_context * context, const char * param) {
 	handle_exit(context, 0);
 	return NULL;
 }
 
+
+//处理lua层传过来的handle,handle可能是name，也可能是格式化的handleid
 static uint32_t
 tohandle(struct skynet_context * context, const char * param) {
 	uint32_t handle = 0;
@@ -482,6 +489,7 @@ tohandle(struct skynet_context * context, const char * param) {
 	return handle;
 }
 
+//杀掉handle对应的service
 static const char *
 cmd_kill(struct skynet_context * context, const char * param) {
 	uint32_t handle = tohandle(context, param);
@@ -538,6 +546,7 @@ cmd_starttime(struct skynet_context * context, const char * param) {
 	return context->result;
 }
 
+//退出所有的service
 static const char *
 cmd_abort(struct skynet_context * context, const char * param) {
 	skynet_handle_retireall();
@@ -781,6 +790,7 @@ skynet_sendname(struct skynet_context * context, uint32_t source, const char * a
 	return skynet_send(context, source, des, type, session, data, sz);
 }
 
+//获取ctx的handle，但是感觉没什么意义
 uint32_t 
 skynet_context_handle(struct skynet_context *ctx) {
 	return ctx->handle;
