@@ -13,6 +13,7 @@
 
 static struct socket_server * SOCKET_SERVER = NULL;
 
+//主线程里面初始化
 void 
 skynet_socket_init() {
 	SOCKET_SERVER = socket_server_create();
@@ -23,12 +24,14 @@ skynet_socket_exit() {
 	socket_server_exit(SOCKET_SERVER);
 }
 
+//主线程里面释放
 void
 skynet_socket_free() {
 	socket_server_release(SOCKET_SERVER);
 	SOCKET_SERVER = NULL;
 }
 
+//投递消息到相对应的消息队列
 // mainloop thread
 static void
 forward_message(int type, bool padding, struct socket_message * result) {
@@ -71,6 +74,7 @@ forward_message(int type, bool padding, struct socket_message * result) {
 	}
 }
 
+//socket线程轮询
 int 
 skynet_socket_poll() {
 	struct socket_server *ss = SOCKET_SERVER;
@@ -112,6 +116,7 @@ skynet_socket_poll() {
 	return 1;
 }
 
+//以下都在工作线程里面调用
 int
 skynet_socket_send(struct skynet_context *ctx, int id, void *buffer, int sz) {
 	return socket_server_send(SOCKET_SERVER, id, buffer, sz);
