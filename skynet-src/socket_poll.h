@@ -7,10 +7,10 @@
 typedef int poll_fd;
 
 struct event {
-	void * s;
-	bool read;
-	bool write;
-	bool error;
+	void * s; //用户数据
+	bool read; //是否可读
+	bool write; //是否可写
+	bool error; //是否错误
 };
 
 static bool sp_invalid(poll_fd fd);

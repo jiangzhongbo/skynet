@@ -80,11 +80,11 @@ struct socket {
 	struct wb_list high;
 	struct wb_list low;
 	int64_t wb_size;
-	volatile uint32_t sending;
-	int fd;
+	volatile uint32_t sending; // 每次都从内存中读，不做优化放入寄存器
+	int fd; 
 	int id;
-	uint8_t protocol;
-	uint8_t type;
+	uint8_t protocol; // 协议
+	uint8_t type; //socket类型
 	uint16_t udpconnecting;
 	int64_t warn_size;
 	union {
@@ -98,8 +98,8 @@ struct socket {
 };
 
 struct socket_server {
-	int recvctrl_fd;
-	int sendctrl_fd;
+	int recvctrl_fd; //读取控制文件描述符，用于线程间通信
+	int sendctrl_fd; //写入控制文件描述符，用于线程间通信
 	int checkctrl;
 	poll_fd event_fd;
 	int alloc_id;
@@ -292,6 +292,7 @@ socket_keepalive(int fd) {
 	setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalive , sizeof(keepalive));  
 }
 
+//多线程访问，所以需要原子操作
 static int
 reserve_id(struct socket_server *ss) {
 	int i;
@@ -554,7 +555,7 @@ send_list_tcp(struct socket_server *ss, struct socket *s, struct wb_list *list, 
 			ssize_t sz = write(s->fd, tmp->ptr, tmp->sz);
 			if (sz < 0) {
 				switch(errno) {
-				case EINTR:
+				case EINTR: // 如果是中断引起的，继续读
 					continue;
 				case AGAIN_WOULDBLOCK:
 					return -1;
@@ -1659,6 +1660,8 @@ _failed_fd:
 	return -1;
 }
 
+//内核会根据somaxconn和backlog的较小值设置accept queue的大小
+//https://www.jianshu.com/p/e6f2036621f4
 static int
 do_listen(const char * host, int port, int backlog) {
 	int family = 0;
@@ -1688,7 +1691,7 @@ socket_server_listen(struct socket_server *ss, uintptr_t opaque, const char * ad
 	request.u.listen.opaque = opaque;
 	request.u.listen.id = id;
 	request.u.listen.fd = fd;
-	send_request(ss, &request, 'L', sizeof(request.u.listen));
+	send_request(ss, &request, 'L', sizeof(request.u.listen)); // L Listen socket
 	return id;
 }
 
