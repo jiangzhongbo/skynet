@@ -1,3 +1,8 @@
+//https://www.cnblogs.com/RainRill/p/8670117.html
+//http://www.cnblogs.com/RainRill/p/8809389.html
+//https://www.cnblogs.com/RainRill/p/8707328.html
+//https://github.com/cloudwu/skynet/issues/646
+
 #include "skynet.h"
 
 #include "socket_server.h"
@@ -91,10 +96,10 @@ struct socket {
 		int size;
 		uint8_t udp_address[UDP_ADDRESS_SIZE];
 	} p;
-	struct spinlock dw_lock;
-	int dw_offset;
-	const void * dw_buffer; 
-	size_t dw_size;
+	struct spinlock dw_lock; 
+	int dw_offset; //立刻发送缓冲区偏移
+	const void * dw_buffer; //立刻发送缓冲区
+	size_t dw_size; //立刻发送缓冲区大小
 };
 
 struct socket_server {
@@ -223,7 +228,7 @@ struct send_object {
 #define MALLOC skynet_malloc
 #define FREE skynet_free
 
-struct socket_lock {
+struct socket_lock { //嵌套自旋锁, 使用嵌套锁的目的是：指定“使用锁的对象”是线程，这样同一线程的不同函数可以同时使用“锁住的对象”
 	struct spinlock *lock;
 	int count;
 };
