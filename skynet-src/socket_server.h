@@ -20,20 +20,23 @@ struct socket_message {
 	int ud;	// for accept, ud is new connection id ; for data, ud is size of data 
 	char * data;
 };
-
-struct socket_server * socket_server_create();
+//这4个是对socket_server本身的操作
+struct socket_server * socket_server_create(); 
 void socket_server_release(struct socket_server *);
 int socket_server_poll(struct socket_server *, struct socket_message *result, int *more);
+void socket_server_exit(struct socket_server *); 
 
-void socket_server_exit(struct socket_server *);
+//这3个对socket进行操作
 void socket_server_close(struct socket_server *, uintptr_t opaque, int id);
 void socket_server_shutdown(struct socket_server *, uintptr_t opaque, int id);
 void socket_server_start(struct socket_server *, uintptr_t opaque, int id);
 
+//这两个发送数据
 // return -1 when error
 int socket_server_send(struct socket_server *, int id, const void * buffer, int sz);
 int socket_server_send_lowpriority(struct socket_server *, int id, const void * buffer, int sz);
 
+// 返回fd对应的id
 // ctrl command below returns id
 int socket_server_listen(struct socket_server *, uintptr_t opaque, const char * addr, int port, int backlog);
 int socket_server_connect(struct socket_server *, uintptr_t opaque, const char * addr, int port);

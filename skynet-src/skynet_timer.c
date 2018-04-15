@@ -91,7 +91,7 @@ add_node(struct timer *T,struct timer_node *node) {
 		link(&T->t[i][((time>>(TIME_NEAR_SHIFT + i*TIME_LEVEL_SHIFT)) & TIME_LEVEL_MASK)],node);	
 	}
 }
-
+//worker调用，所以需要加锁
 static void
 timer_add(struct timer *T,void *arg,size_t sz,int time) {
 	struct timer_node *node = (struct timer_node *)skynet_malloc(sizeof(*node)+sz);
@@ -169,6 +169,7 @@ timer_execute(struct timer *T) {
 	}
 }
 
+//timer线程调用，但是因为TI可能被worker修改，所以需要加锁
 static void 
 timer_update(struct timer *T) {
 	SPIN_LOCK(T);

@@ -78,6 +78,7 @@ skynet_globalmq_pop() {
 	return mq;
 }
 
+//只在skynet_context_new调用
 struct message_queue * 
 skynet_mq_create(uint32_t handle) {
 	struct message_queue *q = skynet_malloc(sizeof(*q));
@@ -138,6 +139,7 @@ skynet_mq_overload(struct message_queue *q) {
 	return 0;
 }
 
+//由抢到消息队列的worker执行，但是worker，socket，timer都有可能操作消息队列，所以需要加锁
 int
 skynet_mq_pop(struct message_queue *q, struct skynet_message *message) {
 	int ret = 1;
@@ -193,6 +195,7 @@ expand_queue(struct message_queue *q) {
 // 早期skynet在这里基于cas无锁实现
 // https://blog.codingnow.com/2014/12/skynet_spinlock.html
 // 在这里用自旋锁代码更简单，之前的无锁实现，还需要考虑cpu乱序执行问题，代码很难写正确
+// 任何线程（worker，socket，timer）都有可能同时调用此函数或者worker操作消息队列，所以要加锁
 void 
 skynet_mq_push(struct message_queue *q, struct skynet_message *message) {
 	assert(message);
@@ -215,6 +218,7 @@ skynet_mq_push(struct message_queue *q, struct skynet_message *message) {
 	SPIN_UNLOCK(q)
 }
 
+//全局队列初始化在主线程调用
 void 
 skynet_mq_init() {
 	struct global_queue *q = skynet_malloc(sizeof(*q));

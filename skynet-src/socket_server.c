@@ -22,15 +22,15 @@
 #define MAX_SOCKET_P 16
 #define MAX_EVENT 64
 #define MIN_READ_BUFFER 64
-#define SOCKET_TYPE_INVALID 0
-#define SOCKET_TYPE_RESERVE 1
-#define SOCKET_TYPE_PLISTEN 2
-#define SOCKET_TYPE_LISTEN 3
-#define SOCKET_TYPE_CONNECTING 4
-#define SOCKET_TYPE_CONNECTED 5
-#define SOCKET_TYPE_HALFCLOSE 6
-#define SOCKET_TYPE_PACCEPT 7
-#define SOCKET_TYPE_BIND 8
+#define SOCKET_TYPE_INVALID 0 //无效socket
+#define SOCKET_TYPE_RESERVE 1 //预留，即将被使用
+#define SOCKET_TYPE_PLISTEN 2 //监听到套接字，但是未加入epoll管理
+#define SOCKET_TYPE_LISTEN 3 //监听到套接字，已经加入epoll管理
+#define SOCKET_TYPE_CONNECTING 4 //正在连接的socket
+#define SOCKET_TYPE_CONNECTED 5 //已经建立连接的socket 且已经加入epoll管理
+#define SOCKET_TYPE_HALFCLOSE 6 //已经在应用层关闭了fd 但是数据还没有发送完 还没有close
+#define SOCKET_TYPE_PACCEPT 7 //accept返回的fd，但是未加入epoll
+#define SOCKET_TYPE_BIND 8 //其他类型的fd 如 stdin stdout等
 
 #define MAX_SOCKET (1<<MAX_SOCKET_P)
 
@@ -93,7 +93,7 @@ struct socket {
 	} p;
 	struct spinlock dw_lock;
 	int dw_offset;
-	const void * dw_buffer;
+	const void * dw_buffer; 
 	size_t dw_size;
 };
 
@@ -108,8 +108,8 @@ struct socket_server {
 	struct socket_object_interface soi;
 	struct event ev[MAX_EVENT];
 	struct socket slot[MAX_SOCKET];
-	char buffer[MAX_INFO];
-	uint8_t udpbuffer[MAX_UDP_PACKAGE];
+	char buffer[MAX_INFO]; //缓冲区
+	uint8_t udpbuffer[MAX_UDP_PACKAGE]; //udp缓冲区
 	fd_set rfds;
 };
 
@@ -292,7 +292,7 @@ socket_keepalive(int fd) {
 	setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalive , sizeof(keepalive));  
 }
 
-//多线程访问，所以需要原子操作
+//多线程访问，所以需要原子
 static int
 reserve_id(struct socket_server *ss) {
 	int i;
@@ -325,7 +325,7 @@ clear_wb_list(struct wb_list *list) {
 	list->head = NULL;
 	list->tail = NULL;
 }
-
+//主线程调用
 struct socket_server * 
 socket_server_create() {
 	int i;
@@ -443,10 +443,11 @@ check_wb_list(struct wb_list *s) {
 	assert(s->tail == NULL);
 }
 
+//加到epoll的接听区可能会失败
 static struct socket *
 new_fd(struct socket_server *ss, int id, int fd, int protocol, uintptr_t opaque, bool add) {
 	struct socket * s = &ss->slot[HASH_ID(id)];
-	assert(s->type == SOCKET_TYPE_RESERVE);
+	assert(s->type == SOCKET_TYPE_RESERVE); //只有预留的socket才能被监听
 
 	if (add) {
 		if (sp_add(ss->event_fd, fd, s)) {
@@ -471,6 +472,7 @@ new_fd(struct socket_server *ss, int id, int fd, int protocol, uintptr_t opaque,
 	return s;
 }
 
+// socket_server_connect
 // return -1 when connecting
 static int
 open_socket(struct socket_server *ss, struct request_open * request, struct socket_message *result) {
@@ -529,7 +531,7 @@ open_socket(struct socket_server *ss, struct request_open * request, struct sock
 		ns->type = SOCKET_TYPE_CONNECTED;
 		struct sockaddr * addr = ai_ptr->ai_addr;
 		void * sin_addr = (ai_ptr->ai_family == AF_INET) ? (void*)&((struct sockaddr_in *)addr)->sin_addr : (void*)&((struct sockaddr_in6 *)addr)->sin6_addr;
-		if (inet_ntop(ai_ptr->ai_family, sin_addr, ss->buffer, sizeof(ss->buffer))) {
+		if (inet_ntop(ai_ptr->ai_family, sin_addr, ss->buffer, sizeof(ss->buffer))) { //将数值格式转化为点分十进制的ip地址格式
 			result->data = ss->buffer;
 		}
 		freeaddrinfo( ai_list );
@@ -804,6 +806,7 @@ append_sendbuffer_low(struct socket_server *ss,struct socket *s, struct request_
 		If write a part, append the rest part to high list. (Even priority is PRIORITY_LOW)
 	Else append package to high (PRIORITY_HIGH) or low (PRIORITY_LOW) list.
  */
+//socket_server_send socket_server_send_lowpriority socket_server_udp_send
 static int
 send_socket(struct socket_server *ss, struct request_send * request, struct socket_message *result, int priority, const uint8_t *udp_address) {
 	int id = request->id;
@@ -865,12 +868,13 @@ send_socket(struct socket_server *ss, struct request_send * request, struct sock
 	return -1;
 }
 
+//socket_server_listen
 static int
 listen_socket(struct socket_server *ss, struct request_listen * request, struct socket_message *result) {
 	int id = request->id;
 	int listen_fd = request->fd;
-	struct socket *s = new_fd(ss, id, listen_fd, PROTOCOL_TCP, request->opaque, false);
-	if (s == NULL) {
+	struct socket *s = new_fd(ss, id, listen_fd, PROTOCOL_TCP, request->opaque, false); //这里不加入监控池
+	if (s == NULL) { // 不可能发生吧？
 		goto _failed;
 	}
 	s->type = SOCKET_TYPE_PLISTEN;
@@ -891,6 +895,7 @@ nomore_sending_data(struct socket *s) {
 	return send_buffer_empty(s) && s->dw_buffer == NULL && (s->sending & 0xffff) == 0;
 }
 
+//socket_server_close socket_server_shutdown
 static int
 close_socket(struct socket_server *ss, struct request_close *request, struct socket_message *result) {
 	int id = request->id;
@@ -920,7 +925,7 @@ close_socket(struct socket_server *ss, struct request_close *request, struct soc
 
 	return -1;
 }
-
+//socket_server_bind
 static int
 bind_socket(struct socket_server *ss, struct request_bind *request, struct socket_message *result) {
 	int id = request->id;
@@ -937,7 +942,7 @@ bind_socket(struct socket_server *ss, struct request_bind *request, struct socke
 	result->data = "binding";
 	return SOCKET_OPEN;
 }
-
+//socket_server_start
 static int
 start_socket(struct socket_server *ss, struct request_start *request, struct socket_message *result) {
 	int id = request->id;
@@ -953,7 +958,7 @@ start_socket(struct socket_server *ss, struct request_start *request, struct soc
 	struct socket_lock l;
 	socket_lock_init(s, &l);
 	if (s->type == SOCKET_TYPE_PACCEPT || s->type == SOCKET_TYPE_PLISTEN) {
-		if (sp_add(ss->event_fd, s->fd, s)) {
+		if (sp_add(ss->event_fd, s->fd, s)) { //加入epoll监控池
 			force_close(ss, s, &l, result);
 			result->data = strerror(errno);
 			return SOCKET_ERR;
@@ -972,6 +977,7 @@ start_socket(struct socket_server *ss, struct request_start *request, struct soc
 	return -1;
 }
 
+//socket_server_nodelay
 static void
 setopt_socket(struct socket_server *ss, struct request_setopt *request) {
 	int id = request->id;
@@ -988,7 +994,7 @@ block_readpipe(int pipefd, void *buffer, int sz) {
 	for (;;) {
 		int n = read(pipefd, buffer, sz);
 		if (n<0) {
-			if (errno == EINTR)
+			if (errno == EINTR) //如果是由于信号中断，继续读
 				continue;
 			fprintf(stderr, "socket-server : read pipe error %s.\n",strerror(errno));
 			return;
@@ -1103,40 +1109,40 @@ ctrl_cmd(struct socket_server *ss, struct socket_message *result) {
 	block_readpipe(fd, buffer, len);
 	// ctrl command only exist in local fd, so don't worry about endian.
 	switch (type) {
-	case 'S':
+	case 'S': //socket_server_start
 		return start_socket(ss,(struct request_start *)buffer, result);
-	case 'B':
+	case 'B': //socket_server_bind
 		return bind_socket(ss,(struct request_bind *)buffer, result);
-	case 'L':
+	case 'L': //socket_server_listen
 		return listen_socket(ss,(struct request_listen *)buffer, result);
-	case 'K':
+	case 'K': //socket_server_close socket_server_shutdown
 		return close_socket(ss,(struct request_close *)buffer, result);
-	case 'O':
+	case 'O': //socket_server_connect
 		return open_socket(ss, (struct request_open *)buffer, result);
-	case 'X':
+	case 'X': //socket_server_exit
 		result->opaque = 0;
 		result->id = 0;
 		result->ud = 0;
 		result->data = NULL;
 		return SOCKET_EXIT;
-	case 'D':
-	case 'P': {
+	case 'D': //socket_server_send
+	case 'P': { //socket_server_send_lowpriority
 		int priority = (type == 'D') ? PRIORITY_HIGH : PRIORITY_LOW;
 		struct request_send * request = (struct request_send *) buffer;
 		int ret = send_socket(ss, request, result, priority, NULL);
 		dec_sending_ref(ss, request->id);
 		return ret;
 	}
-	case 'A': {
+	case 'A': { //socket_server_udp_send
 		struct request_send_udp * rsu = (struct request_send_udp *)buffer;
 		return send_socket(ss, &rsu->send, result, PRIORITY_HIGH, rsu->address);
 	}
-	case 'C':
+	case 'C': //socket_server_udp_connect
 		return set_udp_address(ss, (struct request_setudp *)buffer, result);
-	case 'T':
+	case 'T': //socket_server_nodelay
 		setopt_socket(ss, (struct request_setopt *)buffer);
 		return -1;
-	case 'U':
+	case 'U': //socket_server_udp
 		add_udp_socket(ss, (struct request_udp *)buffer);
 		return -1;
 	default:
@@ -1472,6 +1478,7 @@ send_request(struct socket_server *ss, struct request_package *request, char typ
 	}
 }
 
+//判断addr是否合法，sockets槽是否满了
 static int
 open_request(struct socket_server *ss, struct request_package *req, uintptr_t opaque, const char *addr, int port) {
 	int len = strlen(addr);
@@ -1676,6 +1683,8 @@ do_listen(const char * host, int port, int backlog) {
 	return listen_fd;
 }
 
+//在worker直接listen，立即返回fd对应的id
+
 int 
 socket_server_listen(struct socket_server *ss, uintptr_t opaque, const char * addr, int port, int backlog) {
 	int fd = do_listen(addr, port, backlog);
@@ -1684,12 +1693,13 @@ socket_server_listen(struct socket_server *ss, uintptr_t opaque, const char * ad
 	}
 	struct request_package request;
 	int id = reserve_id(ss);
+	//id不为-1，说明监听sockets槽中还没有满
 	if (id < 0) {
 		close(fd);
 		return id;
 	}
-	request.u.listen.opaque = opaque;
-	request.u.listen.id = id;
+	request.u.listen.opaque = opaque; // service handle
+	request.u.listen.id = id; 
 	request.u.listen.fd = fd;
 	send_request(ss, &request, 'L', sizeof(request.u.listen)); // L Listen socket
 	return id;
@@ -1716,6 +1726,8 @@ socket_server_start(struct socket_server *ss, uintptr_t opaque, int id) {
 	send_request(ss, &request, 'S', sizeof(request.u.start));
 }
 
+//启动TCP_NODELAY，就意味着禁用了Nagle算法，允许小包的发送。
+//对于延时敏感型，同时数据传输量比较小的应用，开启TCP_NODELAY选项无疑是一个正确的选择
 void
 socket_server_nodelay(struct socket_server *ss, int id) {
 	struct request_package request;

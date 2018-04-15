@@ -63,7 +63,7 @@ _try_open(struct modules *m, const char * name) {
 	return dl;
 }
 
-// 这个函数会被并发执行
+// 这个函数会被并行执行，但是不需要加锁，因为只读，哪怕两次loop之间M->count变大，函数还是可以正常退出
 static struct skynet_module * 
 _query(const char * name) {
 	int i;
@@ -144,6 +144,7 @@ skynet_module_insert(struct skynet_module *mod) {
 	SPIN_UNLOCK(M)
 }
 
+//下面4个函数都在cb中执行
 void * 
 skynet_module_instance_create(struct skynet_module *m) {
 	if (m->create) {
@@ -171,7 +172,7 @@ skynet_module_instance_signal(struct skynet_module *m, void *inst, int signal) {
 		m->signal(inst, signal);
 	}
 }
-
+//主线程执行
 void 
 skynet_module_init(const char *path) {
 	struct modules *m = skynet_malloc(sizeof(*m));

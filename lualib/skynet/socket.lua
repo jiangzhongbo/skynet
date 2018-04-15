@@ -162,6 +162,7 @@ skynet.register_protocol {
 	end
 }
 
+--会挂起，直到socket_message过来
 local function connect(id, func)
 	local newbuffer
 	if func == nil then
@@ -192,7 +193,7 @@ end
 
 function socket.open(addr, port)
 	local id = driver.connect(addr,port)
-	return connect(id)
+	return connect(id) 
 end
 
 function socket.bind(os_fd)
